@@ -1,0 +1,765 @@
+openapi: 3.0.3
+info:
+  title: API Club Teclas Unidos
+  version: 1.0.0
+servers:
+  - url: https://trueiot.com.ar/api
+paths:
+  /socios:
+    get:
+      summary: Listar socios con filtros opcionales
+      description: |
+        Obtiene la lista de todos los socios registrados en el club.
+
+        **Filtros disponibles:**
+        - `apellido`: Filtra por apellido exacto
+        - `edad`: Filtra por edad exacta
+
+        Si no se especifican filtros, devuelve todos los socios.
+      parameters:
+        - in: query
+          name: apellido
+          description: Apellido exacto del socio a buscar
+          schema:
+            type: string
+          example: "García"
+        - in: query
+          name: edad
+          description: Edad exacta del socio a buscar
+          schema:
+            type: integer
+          example: 25
+      responses:
+        '200':
+          description: Lista de socios (puede estar vacía si no hay coincidencias)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Socio'
+    post:
+      summary: Alta de socio
+      description: |
+        Registra un nuevo socio en el sistema.
+
+        **Validaciones:**
+        - El DNI debe ser único (no puede estar registrado previamente)
+        - Todos los campos son requeridos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Socio'
+      responses:
+        '201':
+          description: Socio creado
+        '400':
+          description: Error en los datos enviados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '409':
+          description: El DNI ya existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "El DNI ya existe"
+  /socios/{dni}:
+    get:
+      summary: Consultar socio por DNI
+      description: Obtiene la información completa de un socio específico buscando por su número de DNI.
+      parameters:
+        - in: path
+          name: dni
+          required: true
+          description: Número de DNI del socio a consultar
+          schema:
+            type: string
+          example: "12345678"
+      responses:
+        '200':
+          description: Socio encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Socio'
+        '404':
+          description: Socio no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Socio no encontrado"
+    put:
+      summary: Modificar socio
+      description: Actualiza los datos de un socio existente. Se busca el socio por DNI y se actualizan todos sus campos con los nuevos valores proporcionados.
+      parameters:
+        - in: path
+          name: dni
+          required: true
+          description: Número de DNI del socio a modificar
+          schema:
+            type: string
+          example: "12345678"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Socio'
+      responses:
+        '200':
+          description: Socio modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Socio'
+        '400':
+          description: Error en los datos enviados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Socio no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Socio no encontrado"
+    delete:
+      summary: Baja de socio
+      description: Elimina un socio del sistema. Esta operación es permanente y no se puede deshacer.
+      parameters:
+        - in: path
+          name: dni
+          required: true
+          description: Número de DNI del socio a eliminar
+          schema:
+            type: string
+          example: "12345678"
+      responses:
+        '204':
+          description: Socio eliminado exitosamente (sin contenido en la respuesta)
+
+  /actividades:
+    get:
+      summary: Listar actividades con filtros opcionales
+      description: Lista todas las actividades. Se puede filtrar por prefijo de nombre (busca actividades cuyo nombre comience con el valor especificado) y/o por edad mínima exacta.
+      parameters:
+        - in: query
+          name: nombre
+          description: Prefijo del nombre de la actividad (busca nombres que comiencen con este valor)
+          schema:
+            type: string
+          example: "Fut"
+        - in: query
+          name: edadMinima
+          description: Edad mínima exacta de la actividad
+          schema:
+            type: integer
+          example: 18
+      responses:
+        '200':
+          description: Lista de actividades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Actividad'
+    post:
+      summary: Alta de actividad
+      description: Crea una nueva actividad. El campo 'id' no debe incluirse en el request, se genera automáticamente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActividadInput'
+      responses:
+        '201':
+          description: Actividad creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actividad'
+        '400':
+          description: Error en los datos enviados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /actividades/{id}:
+    get:
+      summary: Consultar actividad por ID
+      description: Obtiene la información completa de una actividad específica, incluyendo los recursos asociados a ella.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID numérico de la actividad a consultar
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: Actividad encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actividad'
+        '404':
+          description: Actividad no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Actividad no encontrada"
+    put:
+      summary: Modificar actividad
+      description: Actualiza los datos de una actividad existente. Permite modificar información básica y reasignar recursos asociados.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID numérico de la actividad a modificar
+          schema:
+            type: integer
+          example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Actividad'
+      responses:
+        '200':
+          description: Actividad modificada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actividad'
+        '400':
+          description: Error en los datos enviados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Actividad no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Actividad no encontrada"
+    delete:
+      summary: Baja de actividad
+      description: Elimina una actividad del sistema. Esta operación es permanente y no se puede deshacer. También elimina las relaciones con recursos.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID numérico de la actividad a eliminar
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '204':
+          description: Actividad eliminada exitosamente (sin contenido en la respuesta)
+
+  /recursos:
+    get:
+      summary: Listar recursos
+      description: |
+        Obtiene la lista de todos los recursos del club (canchas, gimnasios, piscinas, etc.).
+        Cada recurso incluye la información completa del socio encargado.
+
+        **Nota:** Los parámetros de filtro están definidos pero no implementados actualmente.
+      parameters:
+        - in: query
+          name: nombre
+          description: Filtro por nombre del recurso (no implementado)
+          schema:
+            type: string
+        - in: query
+          name: fechaReservada
+          description: Filtro por fecha reservada (no implementado)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de recursos con información completa del encargado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recurso'
+    post:
+      summary: Alta de recurso
+      description: Crea un nuevo recurso. El encargado_id debe corresponder a un socio existente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecursoInput'
+      responses:
+        '201':
+          description: Recurso creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+        '400':
+          description: Error en los datos enviados o el encargado no existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "El encargado especificado no existe"
+  /recursos/{id}:
+    get:
+      summary: Consultar recurso por ID
+      description: Obtiene la información completa de un recurso específico, incluyendo los datos del socio encargado.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID numérico del recurso a consultar
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '200':
+          description: Recurso encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Recurso no encontrado"
+    put:
+      summary: Modificar recurso
+      description: Actualiza un recurso existente. Si se proporciona encargado_id, debe corresponder a un socio existente.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecursoInput'
+      responses:
+        '200':
+          description: Recurso modificado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recurso'
+        '400':
+          description: Error en los datos enviados o el encargado no existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Recurso no encontrado"
+    delete:
+      summary: Baja de recurso
+      description: Elimina un recurso del sistema. Esta operación es permanente y no se puede deshacer.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID numérico del recurso a eliminar
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '204':
+          description: Recurso eliminado exitosamente (sin contenido en la respuesta)
+
+  /inscripciones:
+    post:
+      summary: Inscribir socio a actividad
+      description: |
+        Crea una inscripción de un socio a una actividad.
+
+        **Validaciones realizadas:**
+        - El socio debe existir (por DNI)
+        - La actividad debe existir
+        - El socio debe cumplir con la edad mínima de la actividad
+        - La actividad no debe haber alcanzado su cupo máximo
+        - El socio no debe tener más de 5 inscripciones activas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - socioDni
+                - actividadId
+              properties:
+                socioDni:
+                  type: string
+                  description: DNI del socio a inscribir
+                  example: "12345678"
+                actividadId:
+                  type: integer
+                  description: ID de la actividad
+                  example: 5
+      responses:
+        '201':
+          description: Inscripción creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inscripcion'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "El socio con el DNI especificado no existe"
+                      - "La actividad especificada no existe"
+                      - "El socio no cumple con la edad mínima requerida para esta actividad"
+                      - "La actividad ha alcanzado el cupo máximo de inscriptos"
+                      - "El socio ya está inscripto en 5 actividades"
+              examples:
+                edadMinima:
+                  value:
+                    error: "El socio no cumple con la edad mínima requerida para esta actividad"
+                cupoExcedido:
+                  value:
+                    error: "La actividad ha alcanzado el cupo máximo de inscriptos"
+                limiteInscripciones:
+                  value:
+                    error: "El socio ya está inscripto en 5 actividades"
+    get:
+      summary: Listar todas las inscripciones
+      description: Devuelve la lista completa de inscripciones con los datos del socio y la actividad
+      responses:
+        '200':
+          description: Lista de inscripciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inscripcion'
+  /inscripciones/{id}:
+    delete:
+      summary: Cancelar inscripción
+      description: Elimina una inscripción por su ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la inscripción a cancelar
+      responses:
+        '204':
+          description: Inscripción cancelada exitosamente
+
+  /reservas:
+    post:
+      summary: Crear reserva de recurso
+      description: |
+        Crea una reserva de un recurso para una fecha específica.
+
+        **Validaciones realizadas:**
+        - El socio debe existir
+        - El recurso debe existir
+        - El recurso no debe estar reservado en esa fecha (una reserva por recurso por día)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - socioId
+                - recursoId
+                - fecha
+              properties:
+                socioId:
+                  type: integer
+                  description: ID del socio que realiza la reserva
+                  example: 5
+                recursoId:
+                  type: integer
+                  description: ID del recurso a reservar
+                  example: 1
+                fecha:
+                  type: string
+                  format: date
+                  description: Fecha de la reserva (formato YYYY-MM-DD)
+                  example: "2025-11-15"
+      responses:
+        '200':
+          description: Reserva creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '400':
+          description: Error de validación o recurso ya reservado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Recurso ya reservado en esa fecha"
+    get:
+      summary: Listar reservas
+      description: |
+        Obtiene la lista de todas las reservas del sistema.
+
+        **Filtro disponible:**
+        - `fecha`: Filtra reservas por una fecha específica
+
+        Si no se especifica filtro, devuelve todas las reservas.
+      parameters:
+        - in: query
+          name: fecha
+          description: Fecha para filtrar reservas (formato YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-11-15"
+      responses:
+        '200':
+          description: Lista de reservas (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reserva'
+
+components:
+  schemas:
+    Socio:
+      type: object
+      properties:
+        dni:
+          type: string
+        apellido:
+          type: string
+        nombre:
+          type: string
+        edad:
+          type: integer
+        fechaNacimiento:
+          type: string
+          format: date
+        direccion:
+          type: string
+        telefono:
+          type: string
+    Actividad:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID autogenerado de la actividad
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        encargado:
+          type: string
+        horario:
+          type: string
+        edadMinima:
+          type: integer
+        cupoMaximo:
+          type: integer
+        recursos:
+          type: array
+          description: Lista de recursos asociados a la actividad (objetos completos)
+          items:
+            $ref: '#/components/schemas/Recurso'
+    ActividadInput:
+      type: object
+      required:
+        - nombre
+        - descripcion
+        - encargado
+        - horario
+        - edadMinima
+        - cupoMaximo
+      properties:
+        nombre:
+          type: string
+          example: "Futbol Infantil"
+        descripcion:
+          type: string
+          example: "Clase de futbol para niños de 8 a 12 años"
+        encargado:
+          type: string
+          example: "Juan Perez"
+        horario:
+          type: string
+          example: "Lunes y Miércoles 16:00-18:00"
+        edadMinima:
+          type: integer
+          example: 8
+        cupoMaximo:
+          type: integer
+          example: 20
+        recursos:
+          type: array
+          description: Lista de objetos de recursos a asociar (solo necesitan el ID)
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+          example: [{"id": 1}, {"id": 3}]
+    Recurso:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID autogenerado del recurso
+        nombre:
+          type: string
+        ubicacion:
+          type: string
+        encargado_id:
+          type: integer
+          description: ID del socio encargado del recurso
+        encargado:
+          $ref: '#/components/schemas/Socio'
+          description: Datos completos del socio encargado
+    RecursoInput:
+      type: object
+      required:
+        - nombre
+        - ubicacion
+        - encargado_id
+      properties:
+        nombre:
+          type: string
+          example: "Cancha de Futbol 1"
+        ubicacion:
+          type: string
+          example: "Sector A - Planta Baja"
+        encargado_id:
+          type: integer
+          description: ID del socio que será encargado del recurso (debe existir)
+          example: 5
+    Inscripcion:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID autogenerado de la inscripción
+        socio_id:
+          type: integer
+          description: ID del socio inscrito
+        socio:
+          $ref: '#/components/schemas/Socio'
+          description: Datos completos del socio inscrito
+        actividad_id:
+          type: integer
+          description: ID de la actividad
+        actividad:
+          $ref: '#/components/schemas/Actividad'
+          description: Datos completos de la actividad
+        fecha:
+          type: string
+          format: date-time
+          description: Fecha y hora de la inscripción
+    Reserva:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID autogenerado de la reserva
+        socio_id:
+          type: integer
+          description: ID del socio que realizó la reserva
+        socio:
+          $ref: '#/components/schemas/Socio'
+          description: Datos completos del socio
+        recurso_id:
+          type: integer
+          description: ID del recurso reservado
+        recurso:
+          $ref: '#/components/schemas/Recurso'
+          description: Datos completos del recurso reservado
+        fecha:
+          type: string
+          format: date
+          description: Fecha de la reserva
